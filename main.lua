@@ -1,47 +1,37 @@
--- [[ NEXUS OS: MAIN LOADER ]]
+-- [[ NEXUS OS: MAIN LOADER WITH CONFIG ]]
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local RawURL = "https://raw.githubusercontent.com/vanyamod/Cheat/main/"
+
+-- Загружаем глобальный конфиг
+local Config = loadstring(game:HttpGet(RawURL .. "Config.lua"))()
 
 local Window = Rayfield:CreateWindow({
     Name = "NEXUS V3 | ULTIMATE",
-    LoadingTitle = "Загрузка модульной системы...",
+    LoadingTitle = "Nexus Framework v" .. Config.System.Version,
     LoadingSubtitle = "by Nexus Team",
-    ConfigurationSaving = { Enabled = true, Folder = "NexusV3" }
+    ConfigurationSaving = {
+        Enabled = true,
+        Folder = "NexusV3_Data", -- Папка в папке workspace вашего экспойта
+        FileName = "MainConfig"
+    }
 })
 
--- База данных модулей (добавляйте названия файлов сюда)
-local Cogs = {
-    "Movement",
-    "Combat",
-    "Visuals"
-}
+local Cogs = {"Movement", "Combat", "Visuals"}
+local Tabs = {}
 
-local Tabs = {} -- Сюда будем складывать созданные вкладки
-
--- Функция для загрузки "Когов" с GitHub
-local function LoadCogs()
-    local RawURL = "https://raw.githubusercontent.com/ВАШ_НИК/ВАШ_РЕПО/main/Cogs/"
-    
-    for _, cogName in pairs(Cogs) do
-        local success, err = pcall(function()
-            -- Создаем вкладку для модуля
-            Tabs[cogName] = Window:CreateTab(cogName, 4483362458) 
-            
-            -- Загружаем код модуля
-            local code = game:HttpGet(RawURL .. cogName .. ".lua")
-            local func = loadstring(code)
-            
-            if func then
-                -- Передаем вкладку в модуль, чтобы он сам создавал свои кнопки
-                func(Tabs[cogName], Rayfield)
-                print("[NEXUS]: Модуль " .. cogName .. " успешно загружен.")
-            end
-        end)
+-- Универсальный загрузчик
+for _, cogName in pairs(Cogs) do
+    local success, err = pcall(function()
+        Tabs[cogName] = Window:CreateTab(cogName, 4483362458)
         
-        if not success then
-            warn("[NEXUS ERROR]: Не удалось загрузить " .. cogName .. ": " .. tostring(err))
+        local code = game:HttpGet(RawURL .. "Cogs/" .. cogName .. ".lua")
+        local func = loadstring(code)
+        
+        if func then
+            -- ПЕРЕДАЕМ: вкладку, библиотеку и часть конфига для этого модуля
+            func(Tabs[cogName], Rayfield, Config[cogName])
+            print("[NEXUS]: Модуль " .. cogName .. " инициализирован.")
         end
-    end
+    end)
+    if not success then warn("Ошибка в " .. cogName .. ": " .. err) end
 end
-
-LoadCogs()
-Rayfield:LoadConfiguration()
